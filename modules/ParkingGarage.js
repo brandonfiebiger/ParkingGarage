@@ -1,37 +1,37 @@
 const allSmallSpaces = [
-  {id: 1, size: "small", vehicle_id: null, row: 1, level: 1, index: 0},
-  {id: 2, size: "small", vehicle_id: null, row: 1, level: 1, index: 1},
-  {id: 3, size: "small", vehicle_id: null, row: 1, level: 1, index: 2},
-  {id: 4, size: "small", vehicle_id: null, row: 1, level: 1, index: 3},
-  {id: 5, size: "small", vehicle_id: null, row: 1, level: 1, index: 4},
-  {id: 6, size: "small", vehicle_id: null, row: 1, level: 1, index: 5},
-  {id: 7, size: "small", vehicle_id: null, row: 1, level: 1, index: 6},
+  {id: 1, size: "small", vehicle_id: null, row: 1, level: 1},
+  {id: 2, size: "small", vehicle_id: null, row: 1, level: 1},
+  {id: 3, size: "small", vehicle_id: null, row: 1, level: 1},
+  {id: 4, size: "small", vehicle_id: null, row: 1, level: 1},
+  {id: 5, size: "small", vehicle_id: null, row: 1, level: 1},
+  {id: 6, size: "small", vehicle_id: null, row: 1, level: 1},
+  {id: 7, size: "small", vehicle_id: null, row: 1, level: 1},
 ]
 
 const allMediumSpaces = [
-  {id: 1, size: "medium", vehicle_id: null, row: 1, level: 1, index: 0},
-  {id: 2, size: "medium", vehicle_id: null, row: 1, level: 1, index: 1},
-  {id: 3, size: "medium", vehicle_id: null, row: 1, level: 1, index: 2},
-  {id: 4, size: "medium", vehicle_id: null, row: 1, level: 1, index: 3},
-  {id: 5, size: "medium", vehicle_id: null, row: 1, level: 1, index: 4},
-  {id: 6, size: "medium", vehicle_id: null, row: 1, level: 1, index: 5},
-  {id: 7, size: "medium", vehicle_id: null, row: 1, level: 1, index: 6},
+  {id: 1, size: "medium", vehicle_id: null, row: 1, level: 1},
+  {id: 2, size: "medium", vehicle_id: null, row: 1, level: 1},
+  {id: 3, size: "medium", vehicle_id: null, row: 1, level: 1},
+  {id: 4, size: "medium", vehicle_id: null, row: 1, level: 1},
+  {id: 5, size: "medium", vehicle_id: null, row: 1, level: 1},
+  {id: 6, size: "medium", vehicle_id: null, row: 1, level: 1},
+  {id: 7, size: "medium", vehicle_id: null, row: 1, level: 1},
 ]
 
 const allLargeSpaces = [
   [
-  {id: 1, size: "large", vehicle_id: null, row: 0, level: 1, index: 0},
-  {id: 2, size: "large", vehicle_id: null, row: 0, level: 1, index: 1},
-  {id: 3, size: "large", vehicle_id: null, row: 0, level: 1, index: 2},
-  {id: 4, size: "large", vehicle_id: null, row: 0, level: 1, index: 3},
-  {id: 5, size: "large", vehicle_id: null, row: 0, level: 1, index: 4},
+  {id: 1, size: "large", vehicle_id: null, row: 0, level: 1},
+  {id: 2, size: "large", vehicle_id: null, row: 0, level: 1},
+  {id: 3, size: "large", vehicle_id: null, row: 0, level: 1},
+  {id: 4, size: "large", vehicle_id: null, row: 0, level: 1},
+  {id: 5, size: "large", vehicle_id: null, row: 0, level: 1},
   ],
   [
-  {id: 1, size: "large", vehicle_id: null, row: 1, level: 1, index: 0},
-  {id: 2, size: "large", vehicle_id: null, row: 1, level: 1, index: 1},
-  {id: 3, size: "large", vehicle_id: null, row: 1, level: 1, index: 2},
-  {id: 4, size: "large", vehicle_id: null, row: 1, level: 1, index: 3},
-  {id: 5, size: "large", vehicle_id: null, row: 1, level: 1, index: 4},
+  {id: 1, size: "large", vehicle_id: null, row: 1, level: 1},
+  {id: 2, size: "large", vehicle_id: null, row: 1, level: 1},
+  {id: 3, size: "large", vehicle_id: null, row: 1, level: 1},
+  {id: 4, size: "large", vehicle_id: null, row: 1, level: 1},
+  {id: 5, size: "large", vehicle_id: null, row: 1, level: 1},
   ],
   
 ]
@@ -52,9 +52,9 @@ class ParkingGarage {
 
   handleAdd(space, vehicle) {
     this.allParkedVehicles.push(vehicle);
-    const { id, size, row, level, index } = space;
+    const { id, size, row, level} = space;
     
-    const parkingSpace = new ParkingSpace(id, size, 0, level, vehicle.id, index);
+    const parkingSpace = new ParkingSpace(id, size, row, level, vehicle.id);
     this.vehiclesSpots[parkingSpace.vehicle_id] = parkingSpace;
   }
 
@@ -104,6 +104,8 @@ class ParkingGarage {
 
   removeVehicle(id) {
     const foundVehicle = this.allParkedVehicles.find(vehicle => vehicle.id === id);
+
+    this.allParkedVehicles = this.allParkedVehicles.filter(vehicle => vehicle.id !== id);
    
     if (!foundVehicle) {
       console.log('cannot find vehicle!');
@@ -129,10 +131,8 @@ class ParkingGarage {
       case "large":
         for (let arr of this.largeSpaces) {
           for (let space of arr) {
-            console.log(space.row, parkingSpot.row)
             if (space.row == parkingSpot.row) {
               arr.push(parkingSpot);
-              console.log(this.largeSpaces)
               return;
             }
           }
