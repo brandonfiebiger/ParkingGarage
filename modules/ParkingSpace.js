@@ -1,10 +1,9 @@
 class ParkingSpace {
-  constructor(id, size, row, level, vehicle_id = null, index) {
+  constructor(id, size, row, level, vehicle_id = null) {
     this.id = id;
     this.row = row;
     this.size = size;
     this.vehicle_id = vehicle_id;
-    this.index = index;
   }
 }
 
