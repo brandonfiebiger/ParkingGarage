@@ -3,6 +3,7 @@ class ParkingSpace {
     this.id = id;
     this.row = row;
     this.size = size;
+    this.level = level
     this.vehicle_id = vehicle_id;
   }
 }
