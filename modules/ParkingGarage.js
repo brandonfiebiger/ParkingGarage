@@ -145,6 +145,15 @@ class ParkingGarage {
     //Add fetch call to remove vehicle from database
     //Add fetch call to update parkingSpot using parkingSpotId
   }
+
+  handleRemoveLargeVehicle(id) {
+    const clearedSpots = this.largeParkedVehiclesSpots[id].map(spot => {
+      spot.vehicle_id = null
+      return spot;
+    });
+    delete this.largeParkedVehiclesSpots[id];
+    this.largeSpaces.push(clearedSpots);
+  }
 }
 
 
