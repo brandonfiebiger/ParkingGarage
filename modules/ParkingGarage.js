@@ -1,49 +1,13 @@
-const allSmallSpaces = [
-  {id: 1, size: "small", vehicle_id: null, row: 1, level: 1},
-  {id: 2, size: "small", vehicle_id: null, row: 1, level: 1},
-  {id: 3, size: "small", vehicle_id: null, row: 1, level: 1},
-  {id: 4, size: "small", vehicle_id: null, row: 1, level: 1},
-  {id: 5, size: "small", vehicle_id: null, row: 1, level: 1},
-  {id: 6, size: "small", vehicle_id: null, row: 1, level: 1},
-  {id: 7, size: "small", vehicle_id: null, row: 1, level: 1},
-]
-
-const allMediumSpaces = [
-  {id: 1, size: "medium", vehicle_id: null, row: 1, level: 1},
-  {id: 2, size: "medium", vehicle_id: null, row: 1, level: 1},
-  {id: 3, size: "medium", vehicle_id: null, row: 1, level: 1},
-  {id: 4, size: "medium", vehicle_id: null, row: 1, level: 1},
-  {id: 5, size: "medium", vehicle_id: null, row: 1, level: 1},
-  {id: 6, size: "medium", vehicle_id: null, row: 1, level: 1},
-  {id: 7, size: "medium", vehicle_id: null, row: 1, level: 1},
-]
-
-const allLargeSpaces = [
-  [
-  {id: 1, size: "large", vehicle_id: null, row: 0, level: 1},
-  {id: 2, size: "large", vehicle_id: null, row: 0, level: 1},
-  {id: 3, size: "large", vehicle_id: null, row: 0, level: 1},
-  {id: 4, size: "large", vehicle_id: null, row: 0, level: 1},
-  {id: 5, size: "large", vehicle_id: null, row: 0, level: 1},
-  ],
-  [
-  {id: 1, size: "large", vehicle_id: null, row: 1, level: 1},
-  {id: 2, size: "large", vehicle_id: null, row: 1, level: 1},
-  {id: 3, size: "large", vehicle_id: null, row: 1, level: 1},
-  {id: 4, size: "large", vehicle_id: null, row: 1, level: 1},
-  {id: 5, size: "large", vehicle_id: null, row: 1, level: 1},
-  ],
-  
-]
-
-
 const ParkingSpace = require('./ParkingSpace');
+const fetch = require('node-fetch');
+const ApiCalls = require('./ApiCalls');
+
 
 class ParkingGarage {
   constructor() {
-    this.largeSpaces = allLargeSpaces;
-    this.mediumSpaces = allMediumSpaces;
-    this.smallSpaces = allSmallSpaces;
+    this.largeSpaces = [];
+    this.mediumSpaces = [];
+    this.smallSpaces = [];
     this.allParkedVehicles = [];
 
     this.vehiclesSpots = {};
@@ -146,6 +110,7 @@ class ParkingGarage {
     //Add fetch call to update parkingSpot using parkingSpotId
   }
 
+  
   handleRemoveLargeVehicle(id) {
     const clearedSpots = this.largeParkedVehiclesSpots[id].map(spot => {
       spot.vehicle_id = null
@@ -154,7 +119,45 @@ class ParkingGarage {
     delete this.largeParkedVehiclesSpots[id];
     this.largeSpaces.push(clearedSpots);
   }
-}
 
+  async getSpaces() {
+    const spaces =  await ApiCalls.fetchSpaces();
+
+    this.smallSpaces = this.cleanSpaces("small", spaces);
+    this.mediumSpaces = this.cleanSpaces("medium", spaces);
+    this.largeSpaces = this.cleanSpaces("large", spaces);
+    this.vehiclesSpots = this.handleAddOccupiedSpaces(spaces);
+  }  
+
+  handleAddOccupiedSpaces(spaces) {
+    spaces = spaces.filter(space => space.vehicle_id);
+    
+  }
+
+  cleanSpaces(size, spaces) {
+      spaces = spaces.filter(space => space.size === size && !space.vehicle_id);
+      return size === "large" ? this.cleanLargeSpaces(spaces) : spaces;
+  }
+
+  cleanLargeSpaces(spaces)  {
+    const checkObj = spaces.reduce((checkObj, space) => {
+      if (!checkObj[space.row]) {
+        checkObj[space.row] = [space];
+      } else {
+        checkObj[space.row].push(space);
+      }
+
+      return checkObj;
+    }, {});
+
+    let arrayOfLargeRows = [];
+
+    for (let arr in checkObj) {
+      arrayOfLargeRows.push(checkObj[arr]);
+    }
+    
+    return arrayOfLargeRows;
+  }
+}
 
 module.exports = ParkingGarage;
