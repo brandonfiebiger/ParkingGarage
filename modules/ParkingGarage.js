@@ -1,6 +1,9 @@
 const ParkingSpace = require('./ParkingSpace');
 const fetch = require('node-fetch');
 const ApiCalls = require('./ApiCalls');
+const MotorCycle = require('./MotorCycle');
+const Bus = require('./Bus');
+const Car = require('./Car');
 
 
 class ParkingGarage {
@@ -126,16 +129,31 @@ class ParkingGarage {
     this.smallSpaces = this.cleanSpaces("small", spaces);
     this.mediumSpaces = this.cleanSpaces("medium", spaces);
     this.largeSpaces = this.cleanSpaces("large", spaces);
-    this.vehiclesSpots = this.handleAddOccupiedSpaces(spaces);
+    this.handleAddOccupiedSpaces(spaces);
   }  
 
   handleAddOccupiedSpaces(spaces) {
     spaces = spaces.filter(space => space.vehicle_id);
-    
+    spaces.forEach(space => {
+      if (space.size === "large") {
+        if (!this.largeParkedVehiclesSpots[space.vehicle_id]) {
+          this.largeParkedVehiclesSpots[space.vehicle_id] = [space];
+        } else {
+          this.largeParkedVehiclesSpots[space.vehicle_id].push(space);
+        }
+      } else {
+        this.vehiclesSpots[space.vehicle_id] = space;
+      }
+    })
+
   }
 
   cleanSpaces(size, spaces) {
-      spaces = spaces.filter(space => space.size === size && !space.vehicle_id);
+    spaces = spaces.filter(space => space.size === size && !space.vehicle_id);
+    spaces = spaces.map(space => {
+      const {id, size, row, level, vehicle_id } = space;
+      return new ParkingSpace(id, size, row, level, vehicle_id);
+      })
       return size === "large" ? this.cleanLargeSpaces(spaces) : spaces;
   }
 
@@ -157,6 +175,21 @@ class ParkingGarage {
     }
     
     return arrayOfLargeRows;
+  }
+
+  async handleGetVehicles() {
+    const vehicles = await ApiCalls.fetchVehicles()
+    
+    vehicles.forEach(vehicle => {
+      if (vehicle.size === "small") {
+        this.allParkedVehicles.push(new MotorCycle(vehicle.id));
+      } else if (vehicle.size === "medium") {
+        this.allParkedVehicles.push(new Car(vehicle.id));
+      } else {
+        this.allParkedVehicles.push(new Bus(vehicle.id));
+      }
+    })
+    console.log(this.allParkedVehicles)
   }
 }
 
