@@ -1,6 +1,6 @@
 const ParkingSpace = require('../ParkingSpace');
 const fetch = require('node-fetch');
-const ApiCalls = require('../ApiCalls');
+const ApiCalls = require('../ApiCalls/ApiCalls');
 const MotorCycle = require('../MotorCycle');
 const Bus = require('../Bus');
 const Car = require('../Car');
@@ -44,7 +44,7 @@ class ParkingGarage {
         return;
       }
     }
-    console.log('there is no room for your large vehicle.')
+    return 'there is no room for your large vehicle.';
   }
 
   addVehicle(vehicle) {
@@ -60,10 +60,10 @@ class ParkingGarage {
         }
           break;
         case "medium":
-          if (this.mediumSpaces) {
+          if (this.mediumSpaces.length > 0) {
             this.handleAdd(this.mediumSpaces.pop(), vehicle);
           } else {
-            this.handleAdd(this.largeSpaces.pop(), vehicle);
+            this.handleAdd(this.largeSpaces[0].pop(), vehicle);
           }
           break;
         case "large":
@@ -93,8 +93,6 @@ class ParkingGarage {
 
     delete this.vehiclesSpots[id];
 
-    try {
-
       let newSpots;
       switch (parkingSpot.size) {
         case "small":
@@ -115,19 +113,12 @@ class ParkingGarage {
             for (let space of arr) {
               if (space.row == singleSpot.row) {
                 arr.push(singleSpot);
-                console.log(this.largeSpaces);
                 return;
               }
             }
           }
           break;
-        default:
-        console.log('Could not find vehicle!');
       }
-    
-    } catch (error) {
-      console.log(error);
-    }
   }
 
   
@@ -146,16 +137,12 @@ class ParkingGarage {
   }
 
   async getSpaces() {
-    try {
       const spaces =  await ApiCalls.fetchSpaces();
 
       this.smallSpaces = this.cleanSpaces("small", spaces);
       this.mediumSpaces = this.cleanSpaces("medium", spaces);
       this.largeSpaces = this.cleanSpaces("large", spaces);
       this.handleAddOccupiedSpaces(spaces);
-    } catch (error) {
-      console.log(error)
-    }
   }  
 
   handleAddOccupiedSpaces(spaces) {
@@ -222,16 +209,11 @@ class ParkingGarage {
   }
 
   async handleRemoveVehicleFromParkingSpaceFetch(parkingSpace) {
-    try {
-      const updatedSpots = await ApiCalls.removeVehicleFromParkingSpotInDataBase(parkingSpace);
-      return updatedSpots.map(spot => {
-        const { id, size, row, level, vehicle_id } = spot;
-        return new ParkingSpace(id, size, row, level, vehicle_id);
-      });
-
-    } catch (error) {
-      console.log(error);
-    }
+    const updatedSpots = await ApiCalls.removeVehicleFromParkingSpotInDataBase(parkingSpace);
+    return updatedSpots.map(spot => {
+      const { id, size, row, level, vehicle_id } = spot;
+      return new ParkingSpace(id, size, row, level, vehicle_id);
+    });
   }
 }
 
