@@ -1,0 +1,33 @@
+{
+  "name": "ParkingGarage",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "node-fetch": "^2.3.0"
+  },
+  "jest": {
+    "automock": false,
+    "setupFiles": [
+      "./setupJest.js"
+  ]
+  },
+  "devDependencies": {
+    "jest": "^24.5.0",
+    "jest-fetch-mock": "^2.1.1"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brandonfiebiger/ParkingGarage.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/brandonfiebiger/ParkingGarage/issues"
+  },
+  "homepage": "https://github.com/brandonfiebiger/ParkingGarage#readme"
+}
