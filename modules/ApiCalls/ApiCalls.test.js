@@ -85,5 +85,31 @@ describe('ApiCalls', () => {
      const result = await ApiCalls.removeVehicleFromParkingSpotInDataBase(mockSpot);
      expect(result).toEqual({ id: 343, size: "small", row: 5, level: 2, vehicle_id: null })
     });
+
+    it('should throw an error if the status is not ok', async () => {
+      const expected = new Error('FetchError: invalid json response body at undefined reason: Unexpected token o in JSON at position 1');
+      await fetch.mockResponse(Promise.reject('FetchError: invalid json response body at undefined reason: Unexpected token o in JSON at position 1'));
+      await expect(ApiCalls.removeVehicleFromParkingSpotInDataBase(32)).rejects.toEqual(expected);
+    })
+  });
+
+  describe('removeVehicleFromDatabas', () => {
+    it('should call fetch with the correct parameters', async () => {
+      fetch.mockResponse(JSON.stringify({ message: 'YATTA!' }));
+      await ApiCalls.removeVehicleFromDataBase(20);
+      expect(fetch).toHaveBeenCalledWith('http://localhost:5000/api/v1/vehicles/20', {method: "DELETE"})
+    });
+
+    it('should return a success message', async () => {
+      fetch.mockResponse(JSON.stringify('success'))
+      const result = await ApiCalls.removeVehicleFromDataBase(20);
+      expect(result).toEqual('success');
+    });
+
+    it('should throw an error if the status is not ok', async () => {
+      const expected = new Error('FetchError: invalid json response body at undefined reason: Unexpected token o in JSON at position 1');
+      await fetch.mockResponse(Promise.reject('FetchError: invalid json response body at undefined reason: Unexpected token o in JSON at position 1'));
+      await expect(ApiCalls.removeVehicleFromDataBase(32)).rejects.toEqual(expected);
+    });
   });
 });
