@@ -17,22 +17,30 @@ class ParkingGarage {
     this.largeParkedVehiclesSpots = {};
   }
 
-  handleAdd(space, vehicle) {
-    this.allParkedVehicles.push(vehicle);
+  async handleAdd(space, vehicle) {
     const { id, size, row, level} = space;
-    
+    const data = await ApiCalls.addVehicleToDataBase(vehicle);
+    vehicle.id = data.id;
+    this.allParkedVehicles.push(vehicle);
     const parkingSpace = new ParkingSpace(id, size, row, level, vehicle.id);
+    const result = await ApiCalls.updateParkingSpaceWithVehicleId(parkingSpace);
     this.vehiclesSpots[parkingSpace.vehicle_id] = parkingSpace;
   }
 
-  handleAddLargeVehicle(vehicle) {
+  async handleAddLargeVehicle(vehicle) {
+    const data = await ApiCalls.addVehicleToDataBase(vehicle)
+    vehicle.id = data.id;
     this.largeParkedVehiclesSpots[vehicle.id] = [];
     for (let row of this.largeSpaces) {
       if (row.length === 5) {
         for (let i = 0; i < 5; i++) {
-          this.largeParkedVehiclesSpots[vehicle.id].push(row.pop());
+          let space = row.pop()
+          space.vehicle_id = vehicle.id;
+          await ApiCalls.updateParkingSpaceWithVehicleId(space)
+          this.largeParkedVehiclesSpots[vehicle.id].push(space);
         }
         this.allParkedVehicles.push(vehicle);
+        this.largeSpaces = this.largeSpaces.filter(row => row.length);
         return;
       }
     }
@@ -61,7 +69,6 @@ class ParkingGarage {
           break;
         case "large":
           this.handleAddLargeVehicle(vehicle);
-          this.largeSpaces.shift()
           break;
     }
     
@@ -69,11 +76,11 @@ class ParkingGarage {
       //Add fetch call to add vehicle to vehicles table.
   }
 
-  removeVehicle(id) {
+  async removeVehicle(id) {
     const foundVehicle = this.allParkedVehicles.find(vehicle => vehicle.id === id);
 
     this.allParkedVehicles = this.allParkedVehicles.filter(vehicle => vehicle.id !== id);
-   
+
     if (!foundVehicle) {
       console.log('cannot find vehicle!');
       return;
@@ -83,31 +90,49 @@ class ParkingGarage {
       this.handleRemoveLargeVehicle(id);
       return;
     }
-    
+
     const parkingSpot = this.vehiclesSpots[id];
 
+
     delete this.vehiclesSpots[id];
-    
-    switch (parkingSpot.size) {
-      case "small":
-        this.smallSpaces.push(parkingSpot);
-        break;
-      case "medium":
-        this.mediumSpaces.push(parkingSpot);
-        break;
-      case "large":
-        for (let arr of this.largeSpaces) {
-          for (let space of arr) {
-            if (space.row == parkingSpot.row) {
-              arr.push(parkingSpot);
-              return;
+
+    try {
+
+      let newSpots;
+      switch (parkingSpot.size) {
+        case "small":
+        newSpots = await this.handleRemoveVehicleFromParkingSpaceFetch(parkingSpot)
+        await ApiCalls.removeVehicleFromDataBase(foundVehicle.id);
+        this.smallSpaces.push(...newSpots);
+          break;
+        case "medium":
+          newSpots = await this.handleRemoveVehicleFromParkingSpaceFetch(parkingSpot)
+          await ApiCalls.removeVehicleFromDataBase(foundVehicle.id);
+          this.mediumSpaces.push(...newSpots);
+          break;
+        case "large":
+          newSpots = await this.handleRemoveVehicleFromParkingSpaceFetch(parkingSpot)
+          await ApiCalls.removeVehicleFromDataBase(foundVehicle.id);
+          const singleSpot = newSpots.pop();
+          for (let arr of this.largeSpaces) {
+            for (let space of arr) {
+              if (space.row == singleSpot.row) {
+                arr.push(singleSpot);
+                console.log(this.largeSpaces);
+                return;
+              }
             }
           }
-        }
-        break;
-      default:
+          break;
+        default:
         console.log('Could not find vehicle!');
+      }
+    
+    } catch (error) {
+      console.log(error);
     }
+
+      // await ApiCalls.removeVehicleFromDataBase(foundVehicle.id);
     //Add parkingSpot back to stack
     //Add fetch call to remove vehicle from database
     //Add fetch call to update parkingSpot using parkingSpotId
@@ -124,18 +149,24 @@ class ParkingGarage {
   }
 
   async getSpaces() {
-    const spaces =  await ApiCalls.fetchSpaces();
+    try {
+      const spaces =  await ApiCalls.fetchSpaces();
+      this.smallSpaces = this.cleanSpaces("small", spaces);
+      this.mediumSpaces = this.cleanSpaces("medium", spaces);
+      this.largeSpaces = this.cleanSpaces("large", spaces);
+      this.handleAddOccupiedSpaces(spaces);
 
-    this.smallSpaces = this.cleanSpaces("small", spaces);
-    this.mediumSpaces = this.cleanSpaces("medium", spaces);
-    this.largeSpaces = this.cleanSpaces("large", spaces);
-    this.handleAddOccupiedSpaces(spaces);
+    } catch (error) {
+      console.log(error)
+    }
   }  
 
   handleAddOccupiedSpaces(spaces) {
     spaces = spaces.filter(space => space.vehicle_id);
     spaces.forEach(space => {
-      if (space.size === "large") {
+      const foundVehicle = this.allParkedVehicles.find(vehicle => vehicle.id === space.vehicle_id);
+
+      if (space.size === "large" && foundVehicle.size === "large") {
         if (!this.largeParkedVehiclesSpots[space.vehicle_id]) {
           this.largeParkedVehiclesSpots[space.vehicle_id] = [space];
         } else {
@@ -189,7 +220,20 @@ class ParkingGarage {
         this.allParkedVehicles.push(new Bus(vehicle.id));
       }
     })
-    console.log(this.allParkedVehicles)
+
+  }
+
+  async handleRemoveVehicleFromParkingSpaceFetch(parkingSpace) {
+    try {
+      const updatedSpots = await ApiCalls.removeVehicleFromParkingSpotInDataBase(parkingSpace);
+      return updatedSpots.map(spot => {
+        const { id, size, row, level, vehicle_id } = spot;
+        return new ParkingSpace(id, size, row, level, vehicle_id);
+      });
+
+    } catch (error) {
+      console.log(error);
+    }
   }
 }
 
