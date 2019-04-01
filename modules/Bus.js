@@ -1,7 +1,7 @@
 const Vehicle = require('./Vehicle');
 
 class Bus extends Vehicle {
-  constructor(id) {
+  constructor(id = null) {
     super();
     this.id = id;
     this.size = "large";
