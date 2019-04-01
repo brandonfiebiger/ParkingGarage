@@ -12,7 +12,7 @@ class ApiCalls {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.log(error);
+      throw new Error(error);
     }
   }
 
@@ -22,7 +22,7 @@ class ApiCalls {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.log(error);
+      throw new Error(error);
     }
   }
 
@@ -40,12 +40,11 @@ class ApiCalls {
       const result = response.json();
       return result;
     } catch (error) {
-      console.log(error);
+      throw new Error(error);
     }
   }
 
   static async updateParkingSpaceWithVehicleId(parkingSpace) {
-    console.log(parkingSpace)
     try {
       const response = await fetch(`http://localhost:5000/api/v1/spaces/${parkingSpace.id}`, {
         method: 'PATCH',
@@ -57,10 +56,9 @@ class ApiCalls {
         }
       })
       const result = await response.json();
-      console.log(result);
       return result;
     } catch (error) {
-      console.log(error);
+      throw new Error(error);
     }
   }
 
@@ -70,9 +68,9 @@ class ApiCalls {
         method: 'DELETE'
       })
       const result = await response.json();
-      console.log(result);
+      return result;
     } catch (error) {
-      console.log(error);
+      throw new Error(error)
     }
   }
 
@@ -94,7 +92,7 @@ class ApiCalls {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.log(error);
+      throw new Error(error);
     }
   }
 

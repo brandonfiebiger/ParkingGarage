@@ -112,4 +112,85 @@ describe('ApiCalls', () => {
       await expect(ApiCalls.removeVehicleFromDataBase(32)).rejects.toEqual(expected);
     });
   });
+
+  describe('updateParkingSpaceWithVehicleId', () => {
+    it('should call fetch with the correct parameters', async () => {
+      const mockParkingSpace = { 
+        id: 400,
+        size: 'large',
+        row: 2,
+        level: 3,
+        vehicle_id: 55,
+        created_at: '2019-04-01T01:45:02.080Z',
+        updated_at: '2019-04-01T01:45:02.080Z' 
+      };
+      fetch.mockResponse(JSON.stringify({ message: 'YATTA!' }));
+      await ApiCalls.updateParkingSpaceWithVehicleId(mockParkingSpace);
+      expect(fetch).toHaveBeenCalledWith('http://localhost:5000/api/v1/vehicles/20', {"method": "DELETE"})
+    });
+
+    it('should return what comes back from fetch', async () => {
+      const mockParkingSpace = { 
+        id: 400,
+        size: 'large',
+        row: 2,
+        level: 3,
+        vehicle_id: 55,
+        created_at: '2019-04-01T01:45:02.080Z',
+        updated_at: '2019-04-01T01:45:02.080Z' 
+      };
+      fetch.mockResponse(JSON.stringify({ message: 'YATTA!' }));
+      const result = await ApiCalls.updateParkingSpaceWithVehicleId(mockParkingSpace);
+      expect(result).toEqual({message: "YATTA!"})
+    });
+
+    it('should throw an error if status is not ok', async () => {
+      const mockParkingSpace = { 
+        id: 400,
+        size: 'large',
+        row: 2,
+        level: 3,
+        vehicle_id: 55,
+        created_at: '2019-04-01T01:45:02.080Z',
+        updated_at: '2019-04-01T01:45:02.080Z' 
+      };
+      const expected = new Error('FetchError: invalid json response body at undefined reason: Unexpected token o in JSON at position 1');
+      await fetch.mockResponse(Promise.reject('FetchError: invalid json response body at undefined reason: Unexpected token o in JSON at position 1'));
+      await expect(ApiCalls.updateParkingSpaceWithVehicleId(mockParkingSpace)).rejects.toEqual(expected);
+    });
+  });
+
+  describe('addVehicleToDataBase', () => {
+    it('should call fetch with the correct parameters', async () => {
+      fetch.mockResponse(JSON.stringify({ 
+        id: 50,
+        size: 'small',
+        created_at: '2019-04-01T03:49:14.340Z',
+        updated_at: '2019-04-01T03:49:14.340Z' }));
+      const mockVehicle = {size: 'small' }
+      await ApiCalls.addVehicleToDataBase(mockVehicle)
+      expect(fetch).toHaveBeenCalledWith('http://localhost:5000/api/v1/vehicles', {"body": "{\"size\":\"small\"}", "headers": {"Content-Type": "application/json"}, "method": "POST"})
+    });
+
+    it('should return a vehicle object upon successful fetch', async () => {
+      const response ={ 
+        id: 50,
+        size: 'small',
+        created_at: '2019-04-01T03:49:14.340Z',
+        updated_at: '2019-04-01T03:49:14.340Z' }
+
+      fetch.mockResponse(JSON.stringify(response));
+      const mockVehicle = {size: 'small' };
+      const result = await ApiCalls.addVehicleToDataBase(mockVehicle);
+      expect(result).toEqual(response);
+    });
+
+    it('should throw an error if response is not ok', async () => {
+      const mockVehicle = {size: 'small' };
+
+      const expected = new Error('FetchError: invalid json response body at undefined reason: Unexpected token o in JSON at position 1');
+      await fetch.mockResponse(Promise.reject('FetchError: invalid json response body at undefined reason: Unexpected token o in JSON at position 1'));
+      await expect(ApiCalls.addVehicleToDataBase(mockVehicle)).rejects.toEqual(expected);
+    })
+  });
 });
