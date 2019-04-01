@@ -10,11 +10,18 @@ const mockLargeVehiclesSpots = require('../../mockData/mockLargeParkedVehiclesSp
 const mockSpacesWithParkedVehicles = require('../../mockData/mockSpacesWithParkedVehicles');
 const mockResultFromRemoveSmallVehicle = require('../../mockData/mockResultFromRemoveSmallVehicle');
 const mockResultFromRemoveMediumVehicle = require('../../mockData/mockResultFromRemoveMediumVehicle');
-const mockHandleRemoveLargeVehicleResult = require('../../mockData/mockHandleRemoveLargeVehicleResult')
+const mockResultFromRemoveLargeVehicle = require('../../mockData/mockResultFromRemoveLargeVehicle');
+const mockHandleRemoveLargeVehicleResult = require('../../mockData/mockHandleRemoveLargeVehicleResult');
+const mockSpacesWithSmallVehicleInLargeSpot = require('../../mockData/mockSpacesWithSmallVehicleInLargeSpot');
+const mockVehiclesWithSmallVehicleInLargeSpot = require('../../mockData/mockVehiclesWithSmallVehicleInLargeSpot');
+const mockRemoveSmallVehicleFromLargeSpaceResult = require('../../mockData/mockRemoveSmallVehicleFromLargeSpaceResult');
+const mockSpacesWithNoMediumSpots = require('../../mockData/mockSpacesWithNoMediumSpots');
+const onlyLargeSpaces = require('../../mockData/onlyLargeSpaces');
+const onlyMediumSpaces = require('../../mockData/onlyMediumSpaces');
 const MotorCycle = require('../MotorCycle');
 const Car = require('../Car');
 const Bus = require('../Bus');''
-const ApiCalls = require('../ApiCalls');
+const ApiCalls = require('../ApiCalls/ApiCalls');
 
 
 
@@ -141,8 +148,32 @@ describe('ParkingGarage', () => {
       await garage.handleGetVehicles();
       await garage.removeVehicle(54);
       expect(garage.mediumSpaces).toEqual(mockResultFromRemoveMediumVehicle);
-    })
-  })
+    });
+
+    it('should remove the specifies vehicle and push large spaces into array if space is large and vehicle is large', async () => {
+
+      ApiCalls.removeVehicleFromParkingSpotInDataBase = jest.fn().mockImplementation(() => 'success');
+      ApiCalls.removeVehicleFromDataBase = jest.fn().mockImplementation(() => 'success');
+      ApiCalls.fetchSpaces = jest.fn().mockImplementation(() => mockSpacesWithParkedVehicles);
+      garage.handleRemoveVehicleFromParkingSpaceFetch = jest.fn().mockImplementation(() => [ { id: 330, row: 3, size: 'large', level: 1, vehicle_id: null } ])
+      await garage.getSpaces();
+      await garage.handleGetVehicles();
+      await garage.removeVehicle(55);
+      expect(garage.largeSpaces).toEqual(mockResultFromRemoveLargeVehicle);
+    });
+
+    it('should properly remove a medium or small vehicle that is parked in a large space and return that space to the correct row of large spaces', async () => {
+      ApiCalls.fetchSpaces = jest.fn().mockImplementation(() => mockSpacesWithSmallVehicleInLargeSpot);
+      ApiCalls.fetchVehicles = jest.fn().mockImplementation(() => mockVehiclesWithSmallVehicleInLargeSpot);
+      garage.handleRemoveVehicleFromParkingSpaceFetch = jest.fn().mockImplementation(() => [ { id: 330, row: 3, size: 'large', level: 1, vehicle_id: null } ])
+      ApiCalls.removeVehicleFromDataBase = jest.fn().mockImplementation(() => 'success');
+      ApiCalls.removeVehicleFromParkingSpotInDataBase = jest.fn().mockImplementation(() => 'success');
+      await garage.handleGetVehicles();
+      await garage.getSpaces();
+      await garage.removeVehicle(60);
+      expect(garage.largeSpaces).toEqual(mockRemoveSmallVehicleFromLargeSpaceResult);
+    });
+  });
 
   describe('addVehicle', () => {
 
@@ -160,8 +191,35 @@ describe('ParkingGarage', () => {
       await garage.getSpaces();
       const motorcycle = new MotorCycle();
 
-      garage.addVehicle(motorcycle);
+      await garage.addVehicle(motorcycle);
       expect(garage.handleAdd).toHaveBeenCalledWith({"id": 311, "level": 1, "row": 1, "size": "small", "vehicle_id": null}, motorcycle);
+    });
+
+    it('should park a medium car in a large spot if no medium spots are available', async () => {
+      ApiCalls.fetchSpaces = jest.fn().mockImplementation(() => mockSpacesWithNoMediumSpots);
+      garage.handleAdd = jest.fn();
+      await garage.getSpaces();
+      await garage.handleGetVehicles();
+      garage.addVehicle(new Car());
+      expect(garage.handleAdd).toHaveBeenCalledWith({ id: 398, row: 2, size: 'large', level: 3, vehicle_id: null }, {"id": null, "size": "medium"});
+    });
+
+    it('should insert a small vehicle into a large spot if there are no small and medium spaces available', async () => {
+      ApiCalls.fetchSpaces = jest.fn().mockImplementation(() => onlyLargeSpaces);
+      garage.handleAdd = jest.fn();
+      await garage.getSpaces();
+      await garage.handleGetVehicles();
+      garage.addVehicle(new MotorCycle());
+      expect(garage.handleAdd).toHaveBeenCalledWith({ id: 398, row: 2, size: 'large', level: 3, vehicle_id: null }, {"id": null, "size": "small"});
+    });
+
+    it('should insert a small vehicle into a medium spot if no small spots are available', async () => {
+      ApiCalls.fetchSpaces = jest.fn().mockImplementation(() => onlyMediumSpaces);
+      garage.handleAdd = jest.fn();
+      await garage.getSpaces();
+      await garage.handleGetVehicles();
+      garage.addVehicle(new MotorCycle());
+      expect(garage.handleAdd).toHaveBeenCalledWith({"id": 381, "level": 3, "row": 10, "size": "medium", "vehicle_id": null}, {"id": null, "size": "small"});
     })
 
     it('should call handleAddLargeVehicle with the correct arguments', async () => {
@@ -171,6 +229,6 @@ describe('ParkingGarage', () => {
 
       garage.addVehicle(bus);
       expect(garage.handleAddLargeVehicle).toHaveBeenCalledWith(bus);
-    })
-  })
+    });
+  });
 });
