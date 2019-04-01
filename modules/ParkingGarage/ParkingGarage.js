@@ -1,9 +1,9 @@
-const ParkingSpace = require('./ParkingSpace');
+const ParkingSpace = require('../ParkingSpace');
 const fetch = require('node-fetch');
-const ApiCalls = require('./ApiCalls');
-const MotorCycle = require('./MotorCycle');
-const Bus = require('./Bus');
-const Car = require('./Car');
+const ApiCalls = require('../ApiCalls');
+const MotorCycle = require('../MotorCycle');
+const Bus = require('../Bus');
+const Car = require('../Car');
 
 
 class ParkingGarage {
@@ -23,7 +23,7 @@ class ParkingGarage {
     vehicle.id = data.id;
     this.allParkedVehicles.push(vehicle);
     const parkingSpace = new ParkingSpace(id, size, row, level, vehicle.id);
-    const result = await ApiCalls.updateParkingSpaceWithVehicleId(parkingSpace);
+    await ApiCalls.updateParkingSpaceWithVehicleId(parkingSpace);
     this.vehiclesSpots[parkingSpace.vehicle_id] = parkingSpace;
   }
 
@@ -49,12 +49,11 @@ class ParkingGarage {
 
   addVehicle(vehicle) {
     vehicle.move();
-
     switch (vehicle.size) {
       case "small":
-        if (this.smallSpaces.length) {
+        if (this.smallSpaces.length > 0) {
           this.handleAdd(this.smallSpaces.pop(), vehicle);
-        } else if (this.mediumSpaces.length) {
+        } else if (this.mediumSpaces.length > 0) {
           this.handleAdd(this.mediumSpaces.pop(), vehicle);
         } else {
           this.handleAdd(this.largeSpaces[0].pop(), vehicle);
@@ -71,9 +70,6 @@ class ParkingGarage {
           this.handleAddLargeVehicle(vehicle);
           break;
     }
-    
-      //Add fetch call to update parking spot in SQL database.
-      //Add fetch call to add vehicle to vehicles table.
   }
 
   async removeVehicle(id) {
@@ -88,6 +84,7 @@ class ParkingGarage {
   
     if (foundVehicle.size === "large") {
       this.handleRemoveLargeVehicle(id);
+      await ApiCalls.removeVehicleFromDataBase(id)
       return;
     }
 
@@ -101,7 +98,7 @@ class ParkingGarage {
       let newSpots;
       switch (parkingSpot.size) {
         case "small":
-        newSpots = await this.handleRemoveVehicleFromParkingSpaceFetch(parkingSpot)
+        newSpots = await this.handleRemoveVehicleFromParkingSpaceFetch(parkingSpot);
         await ApiCalls.removeVehicleFromDataBase(foundVehicle.id);
         this.smallSpaces.push(...newSpots);
           break;
@@ -131,19 +128,19 @@ class ParkingGarage {
     } catch (error) {
       console.log(error);
     }
-
-      // await ApiCalls.removeVehicleFromDataBase(foundVehicle.id);
-    //Add parkingSpot back to stack
-    //Add fetch call to remove vehicle from database
-    //Add fetch call to update parkingSpot using parkingSpotId
   }
 
   
-  handleRemoveLargeVehicle(id) {
+  async handleRemoveLargeVehicle(id) {
+    this.largeParkedVehiclesSpots[id].forEach(async spot => {
+      await ApiCalls.removeVehicleFromParkingSpotInDataBase(spot);
+    })
+
     const clearedSpots = this.largeParkedVehiclesSpots[id].map(spot => {
       spot.vehicle_id = null
       return spot;
     });
+
     delete this.largeParkedVehiclesSpots[id];
     this.largeSpaces.push(clearedSpots);
   }
@@ -151,17 +148,18 @@ class ParkingGarage {
   async getSpaces() {
     try {
       const spaces =  await ApiCalls.fetchSpaces();
+
       this.smallSpaces = this.cleanSpaces("small", spaces);
       this.mediumSpaces = this.cleanSpaces("medium", spaces);
       this.largeSpaces = this.cleanSpaces("large", spaces);
       this.handleAddOccupiedSpaces(spaces);
-
     } catch (error) {
       console.log(error)
     }
   }  
 
   handleAddOccupiedSpaces(spaces) {
+
     spaces = spaces.filter(space => space.vehicle_id);
     spaces.forEach(space => {
       const foundVehicle = this.allParkedVehicles.find(vehicle => vehicle.id === space.vehicle_id);
@@ -176,7 +174,6 @@ class ParkingGarage {
         this.vehiclesSpots[space.vehicle_id] = space;
       }
     })
-
   }
 
   cleanSpaces(size, spaces) {
@@ -189,6 +186,7 @@ class ParkingGarage {
   }
 
   cleanLargeSpaces(spaces)  {
+
     const checkObj = spaces.reduce((checkObj, space) => {
       if (!checkObj[space.row]) {
         checkObj[space.row] = [space];
@@ -210,6 +208,7 @@ class ParkingGarage {
 
   async handleGetVehicles() {
     const vehicles = await ApiCalls.fetchVehicles()
+ 
     
     vehicles.forEach(vehicle => {
       if (vehicle.size === "small") {
@@ -220,7 +219,6 @@ class ParkingGarage {
         this.allParkedVehicles.push(new Bus(vehicle.id));
       }
     })
-
   }
 
   async handleRemoveVehicleFromParkingSpaceFetch(parkingSpace) {
